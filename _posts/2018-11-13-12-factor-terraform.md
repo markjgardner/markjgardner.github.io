@@ -12,7 +12,7 @@ I feel obligated to acknowledge that the 12 factors were created as a framework 
 
 Factor V declares that you should strictly separate the build, release and run phases of your application lifecycle. The build should produce a versioned, environment agnostic artifact and place that into some central repository. The release phase then takes that artifact, combines it with the environment configuration(s) and deploys the resulting composite into the target environment(s), applying workflow logic to model the SDLC and ITIL practices of the organization.
 
-An important implied outcome of this model is that I should be able to easily rollback to a previous version of my application by simply redeploying a previous build. Since the build contains everything needed to produce a specific version of the running application: artifact + configuration.
+An important implied outcome of this model is that I should be able to easily rollback to a previous version of my application by simply redeploying a previous build. Since a deployment contains everything needed to produce a specific version of the running application: artifact + configuration.
 
 ### plan != build
 
@@ -48,7 +48,7 @@ My solution is to create an empty [workspace](https://www.terraform.io/docs/stat
 
 #### Unit Test: ```awk | sed```???
 
-I will admit that I don't have a good solution for unit testing. There are a couple defunct projects on github that were focused on providing unit test frameworks for terraform. At the moment this is a minor frustration for me and I keep telling myself that I will write my one test harness **when I have the time**. But, despite the lack of an existing solution in the ecosystem, it should be easy enough to recognize the potential for unit testing the plan output by the build step above. The configuration input into the plan is know at design time and the empty workspace acts as a surrogate mocking framework for the cloud provider. At a most basic level I can see using text parsing to run assertions against the output of ```terraform plan``` command.
+I will admit that I don't have a good solution for unit testing. There are a couple defunct projects on github that were focused on providing unit test frameworks for terraform. At the moment this is a minor frustration for me and I keep telling myself that I will write my one test harness *when I have the time*. But, despite the lack of an existing solution in the ecosystem, it should be easy enough to recognize the potential for unit testing the plan output by the build step above. The configuration input into the plan is know at design time and the empty workspace acts as a surrogate mocking framework for the cloud provider. At a most basic level I can see using text parsing to run assertions against the output of ```terraform plan``` command.
 
 #### Publish an artifact
 
