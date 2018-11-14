@@ -59,9 +59,10 @@ You can find the code for the above pipeline [here](https://github.com/markjgard
 
 ### Deploying across environments
 
-Now comes the easy part, deploying our artifact into our target environments. For the most part this is pretty much in line with the practices outlined by Hashicorp. There are two main difference 
+Now comes the easy part, deploying our artifact into our target environments. For the most part this is pretty much in-line with the practices outlined by Hashicorp. There are three main differences:
   1.  Rather than attaching the release pipeline to our git repo, we use the bundle produced by the build stage as our source.
   2.  Because we bundle the dependencies into the build artifact, we do not need nor want to re-initialize during deployment.
+  3.  Our deployment will build a new plan for each environment and immediately deploy it, ensuring that we are enforcing the full definition against the environment with each deployment (as opposed to a stale plan that was generated non-contemporaneously).
 
 ![An example terraform release pipeline](/media/images/releasepipeline.png)
 
@@ -101,13 +102,19 @@ I won't dwell too much on this as there is plenty of documenation out there on h
 
 #### Rinse and repeat
 
-The process for deploying to all subsequent environments should be identical to the first. Simply take this deployment and multiply it by the number of environments in your pipeline. Each subsequent successful deployment should further bolster your confidence that everything is working as it should and that the final production release will be a non-event.
+The process for deploying to all subsequent environments should be identical to the first. Simply multiply the template by the number of environments in your pipeline. Each subsequent successful deployment should further bolster your confidence that everything is working as it should and that the final production release will be a non-event.
+
+### Rolling back
+
+In the event that you find your environment in an inoperable state post deployment, recovering should be a straight-forward exercise. Simply redeploy the previous version from your artifact repository. Because the artifact contains the full definition and all of it's dependencies, it should faithfully recreate the desired state without any hiccups.
 
 ### Additional Considerations
 
 If you are using a remote state store (and you should be), running ```terraform init``` may put some sensitive information into the .terraform folder. In my case I am using an Azure blob container as my state store and the access key is visible in cleartext. You should assess the security implications of putting this information into artifact repository and take appropriate precautions according to your organizations requirements.
 
 I like to automate as much toil out of my work as I possibly can. One particularly exciting example of this is in the release gates for my terraform workflows. In Azure I configure all of my resources to dump their diagnostic and metric data into a common log analytics workspace. This makes it easy for me to build a simple query that looks for errors being generated anywhere within the platform. For the purpose of gating my releases I have an Azure monitor alert that triggers on any significant increase in the variance of the number of errors being observed. The idea is that if a change introduced by my IAC pipeline correlates with a localized spike in the number of errors on the platform, I want to pause my rollout until I can investigate and determine whether the change has caused the spike.
+
+One final suggestion I will add is the creation of a compliance build. The ```plan``` command has one really handle switch: [```--detailed-exitcode```](https://www.terraform.io/docs/commands/plan.html#detailed-exitcode). When called with this switch, the terraform will throw a non-zero exit code in the event of a non-empty diff, meaning that if it detects any difference between the provided state and the target environment it will error. This very useful feature can be used to run a scheduled deployment against your environments (I recommend daily) to tell you if there has been any configuration drift in that environment. This can be a lifesaver for detecting changes made outside of the pipeline by operational teams.  
 
 ### References
 
