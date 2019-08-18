@@ -46,9 +46,37 @@ If the syntax is valid, then we should attempt to "build" the code. This is wher
 
 My solution is to create an empty [workspace](https://www.terraform.io/docs/state/workspaces.html) and generate a plan with generic configuration. The goal of this is simply to generate a plan that exercises every resource defined in code. This plan will *not* be run against any of the environments in our release pipeline. The mere fact of its successful generation is just another validation in our CI pipeline. This confirms that we didn't make any logic errors in our code: cycles, nonexistent references, invalid interpolations.  
 
-#### Unit Test: ```awk | sed```???
+#### Unit Test: ```terraform show --json```
 
-I will admit that I don't have a good solution for unit testing. There are a couple defunct projects on github that were focused on providing unit test frameworks for terraform. At the moment this is a minor frustration for me and I keep telling myself that I will write my own test harness *when I have the time*. But, despite the lack of an existing solution in the ecosystem, it should be easy enough to recognize the potential for unit testing the plan output by the build step above. The configuration input into the plan is know at design time and the empty workspace acts as a surrogate mocking framework for the cloud provider. At a most basic level I can see using text parsing to run assertions against the output of the ```terraform plan``` command.
+##### **Update 8/15/2019:** The release of terraform 0.12 introduced the ability to export a plan to JSON which completely changed my approach to unit testing. This section has been updated to reflect this change in methodology
+
+Just like with application code, an IAC developer will invariably make certain assumptions about the behavior of the code at runtime. And just like with application code, it is a good idea to validate that those assumptions hold up under a variety of scenarios. Unit testing is a tried and true methodology for documenting and enforcing those assumptions. The tests provide a set of guardrails that ensure that as the code grows more complicated and incorporates new functionality and scenarios we don't lose sight of the overall goal of the solution.
+
+Infrastructure code tends to have many nested dependencies: resource A depends upon resource B depends upon resource C. This can be particularly troublesome as a simple error or change to one resource can have exponential impact to resources elsewhere on the dependency graph. A well defined unit test suite will help protect against a cascade of unintended consequences. Prior to terraform 0.12 unit testing was an in-exact science with no solution that was truly satisfying. But with the release of 0.12 it is now possible to export the plan as a machine-readable json document. This makes it possible to write very clear and dependable unit tests that validate expectation against the execution.
+
+Here is an example of a simple unit test that validates the interpolated address space of a dynamically created subnet:
+
+```csharp
+public class PlanTests {
+
+  private static string planPath = "plan.json";
+  private dynamic plan;
+  private IList<dynamic> resources;
+
+  public PlanTests () {
+    var rawPlan = File.ReadAllText(Path.Combine(Environment.CurrentDirectory, planPath));
+    plan = JObject.Parse(rawPlan);
+    resources = new List<dynamic>(plan.resource_changes);
+  }
+
+  [Fact]
+  public void Test()
+  {
+    var r = resources.Single(p => p.name == "app-sn");
+    Assert.Equal("10.0.0.32/27", r.change.after.address_prefix.Value);
+  }
+}
+```
 
 #### Publish the artifact
 
