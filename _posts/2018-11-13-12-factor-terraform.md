@@ -146,4 +146,4 @@ One final suggestion I will add is the creation of a compliance build/release. T
 
 ### References
 
-The code I used to demonstrate this pipeline, including the Azure DevOps build pipeline, is available [here](https://github.com/markjgardner/terraform-pipeline-example). I will update to include a release pipeline definition as well when that [feature is released](https://docs.microsoft.com/en-us/azure/devops/release-notes/). For now the description and pictures above will have to serve as a blueprint.
+The code I used to demonstrate this pipeline, including the Azure DevOps build pipeline, is available [here](https://github.com/markjgardner/terraform-pipeline-example). A multi-stage pipeline implementation which includes the release definition can be found [here](https://github.com/markjgardner/terraform-pipeline-example/blob/release/azure-pipelines.yml) (note that this feature is still maturing and so the defined pipeline is still a bit raw).
